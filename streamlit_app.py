@@ -37,7 +37,7 @@ def show_ui(qa, prompt_to_user="How may I help you?"):
 
 @st.cache_resource
 def get_retriever(openai_api_key=None):
-    docs = load_online_pdf("https://raw.githubusercontent.com/arnaud-dg/fda-510k/data/K233409.pdf")
+    docs = load_online_pdf("https://raw.githubusercontent.com/arnaud-dg/fda-510k/main/data/K233409.pdf")
     embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key, model="text-embedding-3-small")
     return ensemble_retriever_from_docs(docs, embeddings=embeddings)
 
