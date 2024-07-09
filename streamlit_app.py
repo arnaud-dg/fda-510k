@@ -4,7 +4,7 @@ from langchain_community.embeddings import OpenAIEmbeddings
 
 from ensemble import ensemble_retriever_from_docs
 from full_chain import create_full_chain, ask_question
-from local_loader import load_txt_files
+from remote_loader import load_online_pdf
 
 st.set_page_config(page_title="LangChain & Streamlit RAG")
 st.title("LangChain & Streamlit RAG")
@@ -37,7 +37,7 @@ def show_ui(qa, prompt_to_user="How may I help you?"):
 
 @st.cache_resource
 def get_retriever(openai_api_key=None):
-    docs = load_txt_files()
+    docs = load_online_pdf("https://raw.githubusercontent.com/arnaud-dg/fda-510k/data/K233409.pdf")
     embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key, model="text-embedding-3-small")
     return ensemble_retriever_from_docs(docs, embeddings=embeddings)
 
