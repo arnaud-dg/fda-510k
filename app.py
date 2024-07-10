@@ -7,21 +7,22 @@ from sentence_transformers import SentenceTransformer
 import chromadb
 import openai
 import logging
+import nltk
 
+# def download_file(url, local_filename):
+#     with requests.get(url, stream=True) as r:
+#         r.raise_for_status()
+#         with open(local_filename, 'wb') as f:            for chunk in r.iter_content(chunk_size=8192):
+#                 f.write(chunk)
 
-def download_file(url, local_filename):
-    with requests.get(url, stream=True) as r:
-        r.raise_for_status()
-        with open(local_filename, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=8192):
-                f.write(chunk)
+nltk.download('punkt')
 
 # URLs des fichiers dans votre repo GitHub
 base_url = "https://raw.githubusercontent.com/arnaud-dg/fda-510k/main/data/"
 files = ["embeddings.npy", "metadatas.json", "ids.npy"]
 
-for file in files:
-    download_file(base_url + file, file)
+# for file in files:
+#     download_file(base_url + file, file)
 
 # Charger les fichiers téléchargés
 document_embeddings = np.load("embeddings.npy")
