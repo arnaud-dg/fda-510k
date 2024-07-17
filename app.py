@@ -1,115 +1,167 @@
-import requests
-import numpy as np
-import json
-import os
 import streamlit as st
-from sentence_transformers import SentenceTransformer
-import chromadb
-import openai
-import logging
-import nltk
+import pandas as pd
+from snowflake.snowpark.session import Session
+from snowflake.snowpark.context import get_active_session
+import os
 
-# def download_file(url, local_filename):
-#     with requests.get(url, stream=True) as r:
-#         r.raise_for_status()
-#         with open(local_filename, 'wb') as f:            for chunk in r.iter_content(chunk_size=8192):
-#                 f.write(chunk)
+# Set options for pandas to display full text in columns
+pd.set_option("max_colwidth", None)
 
-nltk.download('punkt')
+####################     Snowflake connection     ######################
+@st.cache_resource
+def get_snowflake_session():
+    return st.connection("snowflake").session()
 
-# URLs des fichiers dans votre repo GitHub
-base_url = "https://raw.githubusercontent.com/arnaud-dg/fda-510k/main/data/"
-files = ["embeddings.npy", "metadatas.json", "ids.npy"]
+# Get Snowflake session
+session = get_snowflake_session()
 
-# for file in files:
-#     download_file(base_url + file, file)
+##########################     Constants     ###########################
+NUM_CHUNKS = 3  # Number of chunks provided as context
+SLIDE_WINDOW = 7  # Number of last conversations to remember
 
-# Charger les fichiers téléchargés
-document_embeddings = np.load("embeddings.npy")
-with open("metadatas.json", "r") as f:
-    metadatas = json.load(f)
-ids = np.load("ids.npy").tolist()
-
-# Configurer l'API OpenAI
-openai.api_key = st.secrets["OPENAI_API_KEY"]
-
-
-# Initialiser le client Chroma
-client = chromadb.Client()
-collection_name = "documents"
-
-# Charger les embeddings, les métadonnées et les identifiants depuis les fichiers locaux
-document_embeddings = np.load("embeddings.npy")
-with open("metadatas.json", "r") as f:
-    metadatas = json.load(f)
-ids = np.load("ids.npy").tolist()
-
-# Vérifier si la collection existe, sinon la recréer et la charger
-if collection_name not in [coll.name for coll in client.list_collections()]:
-    collection = client.create_collection(collection_name)
-    collection.add(
-        embeddings=document_embeddings.tolist(), 
-        metadatas=metadatas,
-        ids=ids
-    )
-else:
-    collection = client.get_collection(collection_name)
-
-logging.basicConfig(level=logging.INFO)
-logging.info("Collection prête à être utilisée")
-
-# Charger le modèle de transformation de phrases
-model = SentenceTransformer('all-MiniLM-L6-v2')
-
-def retrieve_documents(query_embedding, top_k=5):
-    logging.info("Recherche de documents pertinents")
-    results = collection.query(query_embeddings=[query_embedding.tolist()], n_results=top_k)
+###########################  Main Functions  ###########################
+def main():
+    st.title(":brain: FDA 510k form Knowledge Base")
     
-    logging.info(f"Résultats de la requête: {results}")
+    # docs_available = session.sql("ls @FDA_510k_PDF_LIST").collect()
+    # list_docs = [doc["name"] for doc in docs_available]
+    # st.dataframe(list_docs)
 
-    # Supposons que la structure des résultats est {'results': [{'metadata': {'content': '...'}}]}
-    retrieved_docs = [result['metadata']['content'] for result in results['results']]
-    logging.info(f"Documents récupérés: {retrieved_docs}")
-    return retrieved_docs
+    config_options()
+    init_messages()
 
-def generate_response(query, context):
-    prompt = f"Context: {context}\n\nQuestion: {query}\nAnswer:"
-    logging.info("Génération de la réponse")
-    response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=prompt,
-        max_tokens=200
-    )
-    logging.info(f"Réponse générée: {response.choices[0].text.strip()}")
-    return response.choices[0].text.strip()
-
-# Streamlit app
-st.title("Chatbot LLM-RAG")
-
-# Utiliser st.session_state pour stocker l'historique du chat
-if 'chat_history' not in st.session_state:
-    st.session_state.chat_history = []
-
-user_message = st.text_input("Posez votre question:")
-
-if user_message and st.button("Envoyer"):
-    st.session_state.chat_history.append({"role": "user", "content": user_message})
+    # Display chat messages from history on app rerun
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
     
-    # Encoder la question de l'utilisateur
-    query_embedding = model.encode([user_message])[0]
+    # Accept user input
+    if question := st.chat_input("How can I help you concerning FDA medical devices submissions ?"):
+        st.session_state.messages.append({"role": "user", "content": question})
+        
+        with st.chat_message("user"):
+            st.markdown(question)
+        
+        with st.chat_message("assistant"):
+            message_placeholder = st.empty()
+            question = question.replace("'", "")
     
-    # Récupérer les documents pertinents
-    retrieved_docs = retrieve_documents(query_embedding)
-    
-    # Générer une réponse
-    context = " ".join(retrieved_docs)
-    response = generate_response(user_message, context)
-    
-    st.session_state.chat_history.append({"role": "assistant", "content": response})
+            with st.spinner(f"{st.session_state.model_name} thinking..."):
+                response = complete(question)
+                res_text = response[0].RESPONSE.replace("'", "")
+                message_placeholder.markdown(res_text)
+        
+        st.session_state.messages.append({"role": "assistant", "content": res_text})
 
-# Afficher l'historique des chats mis à jour
-for chat in st.session_state.chat_history:
-    if chat["role"] == "user":
-        st.write(f"**Vous:** {chat['content']}")
+def config_options():
+    st.sidebar.selectbox('Select your LLM model:',(
+        'snowflake-arctic',
+        'llama3-8b',
+        'mistral-7b',
+        'gemma-7b'), key="model_name")
+                                           
+    st.sidebar.checkbox('Do you want that I remember the chat history?', key="use_chat_history", value=True)
+    st.sidebar.checkbox('Debug: Click to see summary generated of previous conversation', key="debug", value=True)
+    st.sidebar.button("Start Over", key="clear_conversation")
+    st.sidebar.expander("Session State").write(st.session_state)
+
+def init_messages():
+    if st.session_state.clear_conversation or "messages" not in st.session_state:
+        st.session_state.messages = []
+
+def get_similar_chunks(question):
+    cmd = """
+        with results as (
+            SELECT RELATIVE_PATH,
+                   VECTOR_COSINE_SIMILARITY(docs_chunks_table.chunk_vec,
+                   SNOWFLAKE.CORTEX.EMBED_TEXT_768('e5-base-v2', ?)) as similarity,
+                   chunk
+            FROM docs_chunks_table
+            ORDER BY similarity DESC
+            LIMIT ?
+        )
+        SELECT chunk, relative_path FROM results 
+    """
+    df_chunks = session.sql(cmd, params=[question, NUM_CHUNKS]).to_pandas()
+    similar_chunks = " ".join(df_chunks["CHUNK"].replace("'", ""))
+    return similar_chunks
+
+def get_chat_history():
+    chat_history = []
+    start_index = max(0, len(st.session_state.messages) - SLIDE_WINDOW)
+    for i in range(start_index, len(st.session_state.messages) - 1):
+        chat_history.append(st.session_state.messages[i])
+    return chat_history
+
+def summarize_question_with_history(chat_history, question):
+    prompt = f"""
+        Based on the chat history below and the question, generate a query that extends the question
+        with the chat history provided. The query should be in natural language. 
+        Answer with only the query. Do not add any explanation.
+        
+        <chat_history>
+        {chat_history}
+        </chat_history>
+        <question>
+        {question}
+        </question>
+    """
+    cmd = """
+        SELECT snowflake.cortex.complete(?, ?) as response
+    """
+    df_response = session.sql(cmd, params=[st.session_state.model_name, prompt]).collect()
+    summary = df_response[0].RESPONSE.replace("'", "")
+
+    if st.session_state.debug:
+        st.sidebar.text("Summary to be used to find similar chunks in the docs:")
+        st.sidebar.caption(summary)
+
+    return summary
+
+def create_prompt(myquestion):
+    if st.session_state.use_chat_history:
+        chat_history = get_chat_history()
+        if chat_history:
+            question_summary = summarize_question_with_history(chat_history, myquestion)
+            prompt_context = get_similar_chunks(question_summary)
+        else:
+            prompt_context = get_similar_chunks(myquestion)
     else:
-        st.write(f"**Assistant:** {chat['content']}")
+        prompt_context = get_similar_chunks(myquestion)
+        chat_history = ""
+  
+    prompt = f"""
+        You are an expert chat assistant that extracts information from the CONTEXT provided
+        between <context> and </context> tags.
+        You offer a chat experience considering the information included in the CHAT HISTORY
+        provided between <chat_history> and </chat_history> tags.
+        When answering the question contained between <question> and </question> tags
+        be concise and do not hallucinate. 
+        If you don't have the information, just say so.
+           
+        Do not mention the CONTEXT used in your answer.
+        Do not mention the CHAT HISTORY used in your answer.
+           
+        <chat_history>
+        {chat_history}
+        </chat_history>
+        <context>          
+        {prompt_context}
+        </context>
+        <question>  
+        {myquestion}
+        </question>
+        Answer: 
+    """
+    return prompt
+
+def complete(myquestion):
+    prompt = create_prompt(myquestion)
+    cmd = """
+        SELECT snowflake.cortex.complete(?, ?) as response
+    """
+    df_response = session.sql(cmd, params=[st.session_state.model_name, prompt]).collect()
+    return df_response
+
+if __name__ == "__main__":
+    main()
