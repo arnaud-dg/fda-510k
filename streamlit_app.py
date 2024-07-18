@@ -96,6 +96,9 @@ def get_chat_history():
     return chat_history
 
 def summarize_question_with_history(chat_history, question):
+    print(chat_history)
+    print(question)
+
     prompt = f"""
         Based on the chat history below and the question, generate a query that extends the question
         with the chat history provided. The query should be in natural language. 
@@ -109,10 +112,8 @@ def summarize_question_with_history(chat_history, question):
         </question>
     """
     cmd = """
-        SELECT snowflake.cortex.complete(:1, :2) as response
+        SELECT snowflake.cortex.complete(?, ?) as response
     """
-    print(f"Executing command: {cmd}")
-    print(f"With parameters: {(st.session_state.model_name, prompt)}")
     
     cursor.execute(cmd, (st.session_state.model_name, prompt))
     df_response = cursor.fetch_pandas_all()
@@ -121,8 +122,6 @@ def summarize_question_with_history(chat_history, question):
     if st.session_state.debug:
         st.sidebar.text("Summary to be used to find similar chunks in the docs:")
         st.sidebar.caption(summary)
-
-    print(summary)
 
     return summary
 
