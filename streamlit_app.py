@@ -45,9 +45,7 @@ def main():
     
             with st.spinner(f"{st.session_state.model_name} thinking..."):
                 response = complete(question)
-                print(type(response))
-                print(response)
-                res_text = response[0]
+                res_text = response['RESPONSE'].iloc[0]
                 message_placeholder.markdown(res_text)
         
         st.session_state.messages.append({"role": "assistant", "content": res_text})
