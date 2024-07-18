@@ -8,9 +8,19 @@ import os
 pd.set_option("max_colwidth", None)
 
 ####################     Snowflake connection     ######################
-@st.cache_resource
+### Snowflake connection setup
 def get_snowflake_session():
-    return st.connection("snowflake").session()
+    connection_parameters = {
+        "account": st.secrets["account"],
+        "user": st.secrets["user"],
+        "password": st.secrets["password"],
+        "role": st.secrets["role"],
+        "warehouse": st.secrets["warehouse"],
+        "database": st.secrets["database"],
+        "schema": st.secrets["schema"]
+    }
+    session = Session.builder.configs(connection_parameters).create()
+    return session
 
 # Get Snowflake session
 session = get_snowflake_session()
