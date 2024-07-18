@@ -42,6 +42,8 @@ def main():
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
             question = question.replace("'", "")
+
+            print(question)
     
             with st.spinner(f"{st.session_state.model_name} thinking..."):
                 response = complete(question)
@@ -51,7 +53,7 @@ def main():
         st.session_state.messages.append({"role": "assistant", "content": res_text})
 
 def config_options():
-    st.sidebar.image("https://raw.githubusercontent.com/arnaud-dg/fda-510k/main/assets/510k.png", width=250, caption="Web app logo")
+    st.sidebar.image("https://raw.githubusercontent.com/arnaud-dg/fda-510k/main/assets/510k.png", width=250)
     st.sidebar.write("This web application is a personalized LLM chatbot. Unlike other general-purpose LLMs, it is specifically designed to help you explore FDA submission files for medical devices utilizing artificial intelligence.")
     st.sidebar.write("780 documents serve as the response base for the LLM.") 
     st.sidebar.selectbox('Select your LLM model:',(
@@ -59,8 +61,8 @@ def config_options():
         'llama3-8b',
         'gemma-7b'), key="model_name")
                                            
-    st.sidebar.checkbox('Do you want that I remember the chat history?', key="use_chat_history", value=True)
-    st.sidebar.checkbox('Debug: Click to see summary generated of previous conversation', key="debug", value=True)
+    st.sidebar.checkbox('Do you want that I remember the chat history?', key="use_chat_history", value=False)
+    st.sidebar.checkbox('Debug: Click to see summary generated of previous conversation', key="debug", value=False)
     st.sidebar.button("Start Over", key="clear_conversation")
     st.sidebar.expander("Session State").write(st.session_state)
 
@@ -112,7 +114,6 @@ def summarize_question_with_history(chat_history, question):
     
     df_response = conn.query(cmd, params=[st.session_state.model_name, prompt])
     summary = df_response['RESPONSE'].iloc[0]
-    print(summary)
 
     if st.session_state.debug:
         st.sidebar.text("Summary to be used to find similar chunks in the docs:")
