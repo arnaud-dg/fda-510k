@@ -112,8 +112,8 @@ def summarize_question_with_history(chat_history, question):
     """
     
     df_response = conn.query(cmd, params=[st.session_state.model_name, prompt])
-    print(df_response, df_response.shape, df_response.columns)
-    summary = df_response[0]
+    summary = df_response['RESPONSE'].iloc[0]
+    print(summary)
 
     if st.session_state.debug:
         st.sidebar.text("Summary to be used to find similar chunks in the docs:")
