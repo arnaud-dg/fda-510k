@@ -42,6 +42,8 @@ def main():
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
             question = question.replace("'", "")
+
+            st.write(question)
     
             with st.spinner(f"{st.session_state.model_name} thinking..."):
                 response = complete(question)
