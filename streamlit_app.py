@@ -111,7 +111,7 @@ def summarize_question_with_history(chat_history, question):
         SELECT snowflake.cortex.complete(?, ?) as response
     """
     
-    df_response = conn.query(cmd, (st.session_state.model_name, prompt))
+    df_response = conn.query(cmd, params=[st.session_state.model_name, prompt])
     print(df_response)
     summary = df_response[0].RESPONSE.replace("'", "")
 
