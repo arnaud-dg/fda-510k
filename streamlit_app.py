@@ -122,8 +122,6 @@ def summarize_question_with_history(chat_history, question):
 
 def create_prompt(myquestion):
 
-    st.write(myquestion)
-
     if st.session_state.use_chat_history:
         chat_history = get_chat_history()
         if chat_history:
@@ -163,6 +161,8 @@ def create_prompt(myquestion):
 def complete(myquestion):
 
     prompt = create_prompt(myquestion)
+    st.write(prompt)
+
     cmd = """
         SELECT snowflake.cortex.complete(?, ?) as response
     """
