@@ -109,8 +109,11 @@ def summarize_question_with_history(chat_history, question):
         </question>
     """
     cmd = """
-        SELECT snowflake.cortex.complete(?, ?) as response
+        SELECT snowflake.cortex.complete(%s, %s) as response
     """
+    print(f"Executing command: {cmd}")
+    print(f"With parameters: {(st.session_state.model_name, prompt)}")
+    
     cursor.execute(cmd, (st.session_state.model_name, prompt))
     df_response = cursor.fetch_pandas_all()
     summary = df_response#[0].RESPONSE.replace("'", "")
