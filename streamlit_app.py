@@ -82,7 +82,6 @@ def get_similar_chunks(question):
         SELECT chunk, relative_path FROM results 
     """
     df_chunks = conn.query(cmd, params=[question, NUM_CHUNKS])
-    st.write(df_chunks)
     similar_chunks = " ".join(df_chunks["CHUNK"].replace("'", ""))
     return similar_chunks
 
@@ -100,9 +99,9 @@ def summarize_question_with_history(chat_history, question):
         with the chat history provided. The query should be in natural language. 
         Answer with only the query. Do not add any explanation.
         
-        # <chat_history>
-        # {chat_history}
-        # </chat_history>
+        <chat_history>
+        {chat_history}
+        </chat_history>
         <question>
         {question}
         </question>
@@ -160,9 +159,9 @@ def create_prompt(myquestion):
 
 def complete(myquestion):
 
-    prompt = create_prompt(myquestion)
-    st.write(prompt)
+    complete.clear()
 
+    prompt = create_prompt(myquestion)
     cmd = """
         SELECT snowflake.cortex.complete(?, ?) as response
     """
