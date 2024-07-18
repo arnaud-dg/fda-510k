@@ -45,6 +45,7 @@ def main():
     
             with st.spinner(f"{st.session_state.model_name} thinking..."):
                 response = complete(question)
+                print(response)
                 res_text = response[0].RESPONSE.replace("'", "")
                 message_placeholder.markdown(res_text)
         
