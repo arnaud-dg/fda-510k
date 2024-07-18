@@ -45,8 +45,7 @@ def main():
     
             with st.spinner(f"{st.session_state.model_name} thinking..."):
                 response = complete(question)
-                print(response)
-                res_text = response[0].RESPONSE.replace("'", "")
+                res_text = response[0]
                 message_placeholder.markdown(res_text)
         
         st.session_state.messages.append({"role": "assistant", "content": res_text})
@@ -113,7 +112,7 @@ def summarize_question_with_history(chat_history, question):
     
     df_response = conn.query(cmd, params=[st.session_state.model_name, prompt])
     print(df_response)
-    summary = df_response[0].RESPONSE.replace("'", "")
+    summary = df_response[0]
 
     if st.session_state.debug:
         st.sidebar.text("Summary to be used to find similar chunks in the docs:")
