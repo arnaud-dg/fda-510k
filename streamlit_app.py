@@ -112,7 +112,7 @@ def summarize_question_with_history(chat_history, question):
     """
     
     df_response = conn.query(cmd, params=[st.session_state.model_name, prompt])
-    print(df_response[0])
+    print(type(df_response))
     summary = df_response[0]
 
     if st.session_state.debug:
