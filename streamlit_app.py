@@ -82,7 +82,7 @@ def get_similar_chunks(question):
         )
         SELECT chunk, relative_path FROM results 
     """
-    df_chunks = conn.query(cmd, params=[question, NUM_CHUNKS]).collect()
+    df_chunks = conn.query(cmd, params=[question, NUM_CHUNKS])
     similar_chunks = " ".join(df_chunks["CHUNK"].replace("'", ""))
     return similar_chunks
 
@@ -111,7 +111,8 @@ def summarize_question_with_history(chat_history, question):
         SELECT snowflake.cortex.complete(?, ?) as response
     """
     
-    df_response = conn.query(cmd, (st.session_state.model_name, prompt)).collect()
+    df_response = conn.query(cmd, (st.session_state.model_name, prompt))
+    print(df_response)
     summary = df_response[0].RESPONSE.replace("'", "")
 
     if st.session_state.debug:
@@ -163,7 +164,7 @@ def complete(myquestion):
         SELECT snowflake.cortex.complete(?, ?) as response
     """
 
-    df_response = conn.query(cmd, params=[st.session_state.model_name, prompt]).collect()
+    df_response = conn.query(cmd, params=[st.session_state.model_name, prompt])
     return df_response
 
 if __name__ == "__main__":
