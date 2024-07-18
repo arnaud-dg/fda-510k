@@ -94,16 +94,14 @@ def get_chat_history():
 
 def summarize_question_with_history(chat_history, question):
 
-    print(question)
-
     prompt = f"""
         Based on the chat history below and the question, generate a query that extends the question
         with the chat history provided. The query should be in natural language. 
         Answer with only the query. Do not add any explanation.
         
-        <chat_history>
-        {chat_history}
-        </chat_history>
+        # <chat_history>
+        # {chat_history}
+        # </chat_history>
         <question>
         {question}
         </question>
@@ -159,6 +157,9 @@ def create_prompt(myquestion):
     return prompt
 
 def complete(myquestion):
+
+    st.write(myquestion)
+    
     prompt = create_prompt(myquestion)
     cmd = """
         SELECT snowflake.cortex.complete(?, ?) as response
