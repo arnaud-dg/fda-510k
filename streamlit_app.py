@@ -9,11 +9,7 @@ import os
 pd.set_option("max_colwidth", None)
 
 ####################     Snowflake connection     ######################
-@st.cache_resource
-def create_session():
-    return Session.builder.configs(st.secrets.snowflake).create()
-
-session = create_session()
+conn = st.connection("snowflake")
 
 ##########################     Constants     ###########################
 NUM_CHUNKS = 3  # Number of chunks provided as context
@@ -54,6 +50,9 @@ def main():
         st.session_state.messages.append({"role": "assistant", "content": res_text})
 
 def config_options():
+    st.sidebar.image("https://raw.githubusercontent.com/arnaud-dg/fda-510k/main/assets/510k.png", width=250, caption="Web app logo")
+    st.sidebar.write("This web application is a personalized LLM chatbot. Unlike other general-purpose LLMs, it is specifically designed to help you explore FDA submission files for medical devices utilizing artificial intelligence.")
+    st.sidebar.write("780 documents serve as the response base for the LLM.") 
     st.sidebar.selectbox('Select your LLM model:',(
         'snowflake-arctic',
         'llama3-8b',
@@ -160,7 +159,7 @@ def complete(myquestion):
     cmd = """
         SELECT snowflake.cortex.complete(?, ?) as response
     """
-    df_response = session.sql(cmd, params=[st.session_state.model_name, prompt]).collect()
+    df_response = conn.sql(cmd, params=[st.session_state.model_name, prompt]).collect()
     return df_response
 
 if __name__ == "__main__":
