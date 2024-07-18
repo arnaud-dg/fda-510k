@@ -8,19 +8,30 @@ import os
 pd.set_option("max_colwidth", None)
 
 ####################     Snowflake connection     ######################
-### Snowflake connection setup
-connection_parameters = {
-    "account": st.secrets["account"],
-    "user": st.secrets["user"],
-    "password": st.secrets["password"],
-    "role": st.secrets["role"],
-    "warehouse": st.secrets["warehouse"],
-    "database": st.secrets["database"],
-    "schema": st.secrets["schema"]
-}
+def get_snowflake_session():
+    # Ensure the secrets are loaded from Streamlit's secrets management
+    snowflake_secrets = st.secrets["snowflake"]
 
-# Get Snowflake session
-session = get_active_session(connection_parameters )
+    print(snowflake_secrets)
+    
+    # Use the secrets to set up the connection parameters
+    connection_parameters = {
+        "account": snowflake_secrets["account"],
+        "user": snowflake_secrets["user"],
+        "password": snowflake_secrets["password"],
+        "role": snowflake_secrets["role"],
+        "warehouse": snowflake_secrets["warehouse"],
+        "database": snowflake_secrets["database"],
+        "schema": snowflake_secrets["schema"]
+    }
+    
+    # Establish the Snowflake session using the connection parameters
+    session = Session.builder.configs(connection_parameters).create()
+    
+    return session
+
+# Get the Snowflake session
+session = get_snowflake_session()
 
 ##########################     Constants     ###########################
 NUM_CHUNKS = 3  # Number of chunks provided as context
