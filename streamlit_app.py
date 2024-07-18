@@ -11,8 +11,6 @@ pd.set_option("max_colwidth", None)
 ####################     Snowflake connection     ######################
 conn = st.connection("snowflake")
 
-cursor = conn.cursor()
-
 ##########################     Constants     ###########################
 NUM_CHUNKS = 3  # Number of chunks provided as context
 SLIDE_WINDOW = 7  # Number of last conversations to remember
@@ -21,7 +19,7 @@ SLIDE_WINDOW = 7  # Number of last conversations to remember
 def main():
     st.title(":brain: FDA 510k form Knowledge Base")
     
-    # docs_available = conn.query("ls @FDA_510k_PDF_LIST").collect()
+    # docs_available = conn.sql("ls @FDA_510k_PDF_LIST").collect()
     # list_docs = [doc["name"] for doc in docs_available]
     # st.dataframe(list_docs)
 
@@ -83,8 +81,7 @@ def get_similar_chunks(question):
         )
         SELECT chunk, relative_path FROM results 
     """
-    cursor.execute(cmd, params=[question, NUM_CHUNKS])
-    df_chunks = cursor.fetch_pandas_all()
+    df_chunks = conn.sql(cmd, params=[question, NUM_CHUNKS]).collect()
     similar_chunks = " ".join(df_chunks["CHUNK"].replace("'", ""))
     return similar_chunks
 
@@ -96,6 +93,7 @@ def get_chat_history():
     return chat_history
 
 def summarize_question_with_history(chat_history, question):
+
     prompt = f"""
         Based on the chat history below and the question, generate a query that extends the question
         with the chat history provided. The query should be in natural language. 
@@ -111,9 +109,9 @@ def summarize_question_with_history(chat_history, question):
     cmd = """
         SELECT snowflake.cortex.complete(?, ?) as response
     """
-    cursor.execute(cmd, params=[st.session_state.model_name, prompt])
-    df_response = cursor.fetch_pandas_all()
-    summary = df_response#[0].RESPONSE.replace("'", "")
+    
+    df_response = conn.sql(cmd, (st.session_state.model_name, prompt)).collect()
+    summary = df_response[0].RESPONSE.replace("'", "")
 
     if st.session_state.debug:
         st.sidebar.text("Summary to be used to find similar chunks in the docs:")
@@ -164,12 +162,7 @@ def complete(myquestion):
         SELECT snowflake.cortex.complete(?, ?) as response
     """
 
-    conn = st.connection("snowflake")
-
-    cursor = conn.cursor()
-
-    cursor.execute(cmd, params=[st.session_state.model_name, prompt])
-    df_response = cursor.fetch_pandas_all()
+    df_response = conn.sql(cmd, params=[st.session_state.model_name, prompt]).collect()
     return df_response
 
 if __name__ == "__main__":
