@@ -19,7 +19,7 @@ SLIDE_WINDOW = 7  # Number of last conversations to remember
 def main():
     st.title(":brain: FDA 510k form Knowledge Base")
     
-    # docs_available = session.sql("ls @FDA_510k_PDF_LIST").collect()
+    # docs_available = conn.sql("ls @FDA_510k_PDF_LIST").collect()
     # list_docs = [doc["name"] for doc in docs_available]
     # st.dataframe(list_docs)
 
@@ -81,7 +81,7 @@ def get_similar_chunks(question):
         )
         SELECT chunk, relative_path FROM results 
     """
-    df_chunks = session.sql(cmd, params=[question, NUM_CHUNKS]).to_pandas()
+    df_chunks = conn.sql(cmd, params=[question, NUM_CHUNKS]).to_pandas()
     similar_chunks = " ".join(df_chunks["CHUNK"].replace("'", ""))
     return similar_chunks
 
@@ -108,7 +108,7 @@ def summarize_question_with_history(chat_history, question):
     cmd = """
         SELECT snowflake.cortex.complete(?, ?) as response
     """
-    df_response = session.sql(cmd, params=[st.session_state.model_name, prompt]).collect()
+    df_response = conn.sql(cmd, params=[st.session_state.model_name, prompt]).collect()
     summary = df_response[0].RESPONSE.replace("'", "")
 
     if st.session_state.debug:
