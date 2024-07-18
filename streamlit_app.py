@@ -159,13 +159,16 @@ def create_prompt(myquestion):
 def complete(myquestion):
 
     st.write(myquestion)
-    
+
     prompt = create_prompt(myquestion)
     cmd = """
         SELECT snowflake.cortex.complete(?, ?) as response
     """
 
     df_response = conn.query(cmd, params=[st.session_state.model_name, prompt])
+
+    st.write(df_response)
+
     return df_response
 
 if __name__ == "__main__":
