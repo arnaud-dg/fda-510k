@@ -42,8 +42,6 @@ def main():
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
             question = question.replace("'", "")
-
-            st.write(question)
     
             with st.spinner(f"{st.session_state.model_name} thinking..."):
                 response = complete(question)
@@ -123,6 +121,9 @@ def summarize_question_with_history(chat_history, question):
     return summary
 
 def create_prompt(myquestion):
+
+    st.write(myquestion)
+
     if st.session_state.use_chat_history:
         chat_history = get_chat_history()
         if chat_history:
@@ -161,16 +162,11 @@ def create_prompt(myquestion):
 
 def complete(myquestion):
 
-    st.write(myquestion)
-
     prompt = create_prompt(myquestion)
     cmd = """
         SELECT snowflake.cortex.complete(?, ?) as response
     """
-
     df_response = conn.query(cmd, params=[st.session_state.model_name, prompt])
-
-    st.write(df_response)
 
     return df_response
 
