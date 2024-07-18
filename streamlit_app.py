@@ -1,37 +1,19 @@
 import streamlit as st
 import pandas as pd
-from snowflake.snowpark.session import Session
-from snowflake.snowpark.context import get_active_session
+from snowflake.snowpark import Session
+# from snowflake.snowpark.session import Session
+# from snowflake.snowpark.context import get_active_session
 import os
 
 # Set options for pandas to display full text in columns
 pd.set_option("max_colwidth", None)
 
 ####################     Snowflake connection     ######################
-def get_snowflake_session():
-    # Ensure the secrets are loaded from Streamlit's secrets management
-    snowflake_secrets = st.secrets["snowflake"]
+@st.cache_resource
+def create_session():
+    return Session.builder.configs(st.secrets.snowflake).create()
 
-    print(snowflake_secrets)
-    
-    # Use the secrets to set up the connection parameters
-    connection_parameters = {
-        "account": snowflake_secrets["account"],
-        "user": snowflake_secrets["user"],
-        "password": snowflake_secrets["password"],
-        "role": snowflake_secrets["role"],
-        "warehouse": snowflake_secrets["warehouse"],
-        "database": snowflake_secrets["database"],
-        "schema": snowflake_secrets["schema"]
-    }
-    
-    # Establish the Snowflake session using the connection parameters
-    session = Session.builder.configs(connection_parameters).create()
-    
-    return session
-
-# Get the Snowflake session
-session = get_snowflake_session()
+session = create_session()
 
 ##########################     Constants     ###########################
 NUM_CHUNKS = 3  # Number of chunks provided as context
