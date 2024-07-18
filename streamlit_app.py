@@ -12,6 +12,7 @@ pd.set_option("max_colwidth", None)
 conn = st.connection("snowflake")
 
 ##########################     Constants     ###########################
+model_name = 'mistral-7b'
 NUM_CHUNKS = 3  # Number of chunks provided as context
 SLIDE_WINDOW = 7  # Number of last conversations to remember
 
@@ -81,7 +82,7 @@ def get_similar_chunks(question):
         )
         SELECT chunk, relative_path FROM results 
     """
-    df_chunks = conn.sql(cmd, params=[question, NUM_CHUNKS]).collect()
+    df_chunks = conn.query(cmd, params=[question, NUM_CHUNKS]).collect()
     similar_chunks = " ".join(df_chunks["CHUNK"].replace("'", ""))
     return similar_chunks
 
@@ -110,7 +111,7 @@ def summarize_question_with_history(chat_history, question):
         SELECT snowflake.cortex.complete(?, ?) as response
     """
     
-    df_response = conn.sql(cmd, (st.session_state.model_name, prompt)).collect()
+    df_response = conn.query(cmd, (st.session_state.model_name, prompt)).collect()
     summary = df_response[0].RESPONSE.replace("'", "")
 
     if st.session_state.debug:
@@ -162,7 +163,7 @@ def complete(myquestion):
         SELECT snowflake.cortex.complete(?, ?) as response
     """
 
-    df_response = conn.sql(cmd, params=[st.session_state.model_name, prompt]).collect()
+    df_response = conn.query(cmd, params=[st.session_state.model_name, prompt]).collect()
     return df_response
 
 if __name__ == "__main__":
