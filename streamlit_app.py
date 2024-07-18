@@ -59,7 +59,7 @@ def config_options():
         'snowflake-arctic',
         'llama3-8b',
         'mistral-7b',
-        'gemma-7b'), key="model_name")
+        'gemma-7b'), key="model_name", value='mistral-7b')
                                            
     st.sidebar.checkbox('Do you want that I remember the chat history?', key="use_chat_history", value=True)
     st.sidebar.checkbox('Debug: Click to see summary generated of previous conversation', key="debug", value=True)
@@ -113,7 +113,7 @@ def summarize_question_with_history(chat_history, question):
     """
     cursor.execute(cmd, params=[st.session_state.model_name, prompt])
     df_response = cursor.fetch_pandas_all()
-    summary = df_response[0].RESPONSE.replace("'", "")
+    summary = df_response#[0].RESPONSE.replace("'", "")
 
     if st.session_state.debug:
         st.sidebar.text("Summary to be used to find similar chunks in the docs:")
@@ -163,6 +163,11 @@ def complete(myquestion):
     cmd = """
         SELECT snowflake.cortex.complete(?, ?) as response
     """
+
+    conn = st.connection("snowflake")
+
+    cursor = conn.cursor()
+
     cursor.execute(cmd, params=[st.session_state.model_name, prompt])
     df_response = cursor.fetch_pandas_all()
     return df_response
