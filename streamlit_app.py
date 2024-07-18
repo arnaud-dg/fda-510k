@@ -119,6 +119,8 @@ def summarize_question_with_history(chat_history, question):
         st.sidebar.text("Summary to be used to find similar chunks in the docs:")
         st.sidebar.caption(summary)
 
+    print(summary)
+
     return summary
 
 def create_prompt(myquestion):
