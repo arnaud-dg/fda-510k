@@ -6,7 +6,7 @@ from snowflake.snowpark import Session
 import os
 
 # Set options for pandas to display full text in columns
-pd.set_option("max_colwidth", None)
+# pd.set_option("max_colwidth", None)
 
 ####################     Snowflake connection     ######################
 conn = st.connection("snowflake")
@@ -82,6 +82,7 @@ def get_similar_chunks(question):
         SELECT chunk, relative_path FROM results 
     """
     df_chunks = conn.query(cmd, params=[question, NUM_CHUNKS])
+    st.write(df_chunks)
     similar_chunks = " ".join(df_chunks["CHUNK"].replace("'", ""))
     return similar_chunks
 
