@@ -55,9 +55,8 @@ def config_options():
     st.sidebar.write("This web application is a personalized LLM chatbot. Unlike other general-purpose LLMs, it is specifically designed to help you explore FDA submission files for medical devices utilizing artificial intelligence.")
     st.sidebar.write("780 documents serve as the response base for the LLM.") 
     st.sidebar.selectbox('Select your LLM model:',(
-        'snowflake-arctic',
-        'llama3-8b',
         'mistral-7b',
+        'llama3-8b',
         'gemma-7b'), key="model_name")
                                            
     st.sidebar.checkbox('Do you want that I remember the chat history?', key="use_chat_history", value=True)
