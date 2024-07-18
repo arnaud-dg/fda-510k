@@ -59,7 +59,7 @@ def config_options():
         'snowflake-arctic',
         'llama3-8b',
         'mistral-7b',
-        'gemma-7b'), key="model_name", value='mistral-7b')
+        'gemma-7b'), key="model_name")
                                            
     st.sidebar.checkbox('Do you want that I remember the chat history?', key="use_chat_history", value=True)
     st.sidebar.checkbox('Debug: Click to see summary generated of previous conversation', key="debug", value=True)
