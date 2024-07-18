@@ -9,21 +9,18 @@ pd.set_option("max_colwidth", None)
 
 ####################     Snowflake connection     ######################
 ### Snowflake connection setup
-def get_snowflake_session():
-    connection_parameters = {
-        "account": st.secrets["account"],
-        "user": st.secrets["user"],
-        "password": st.secrets["password"],
-        "role": st.secrets["role"],
-        "warehouse": st.secrets["warehouse"],
-        "database": st.secrets["database"],
-        "schema": st.secrets["schema"]
-    }
-    session = Session.builder.configs(connection_parameters).create()
-    return session
+connection_parameters = {
+    "account": st.secrets["account"],
+    "user": st.secrets["user"],
+    "password": st.secrets["password"],
+    "role": st.secrets["role"],
+    "warehouse": st.secrets["warehouse"],
+    "database": st.secrets["database"],
+    "schema": st.secrets["schema"]
+}
 
 # Get Snowflake session
-session = get_snowflake_session()
+session = get_active_session(connection_parameters )
 
 ##########################     Constants     ###########################
 NUM_CHUNKS = 3  # Number of chunks provided as context
