@@ -159,7 +159,7 @@ def create_prompt(myquestion):
 
 def complete(myquestion):
 
-    complete.clear()
+    st.cache_data.clear()
 
     prompt = create_prompt(myquestion)
     cmd = """
