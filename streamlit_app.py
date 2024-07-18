@@ -109,7 +109,7 @@ def summarize_question_with_history(chat_history, question):
         </question>
     """
     cmd = """
-        SELECT snowflake.cortex.complete(%s, %s) as response
+        SELECT snowflake.cortex.complete(:1, :2) as response
     """
     print(f"Executing command: {cmd}")
     print(f"With parameters: {(st.session_state.model_name, prompt)}")
