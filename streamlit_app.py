@@ -42,8 +42,6 @@ def main():
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
             question = question.replace("'", "")
-
-            print(question)
     
             with st.spinner(f"{st.session_state.model_name} thinking..."):
                 response = complete(question)
@@ -95,6 +93,8 @@ def get_chat_history():
     return chat_history
 
 def summarize_question_with_history(chat_history, question):
+
+    print(question)
 
     prompt = f"""
         Based on the chat history below and the question, generate a query that extends the question
