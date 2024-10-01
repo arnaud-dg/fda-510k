@@ -1,3 +1,5 @@
+[Streamlit Weblink](https://fda-510k-dkpqqdmyxeshkpspqez74e.streamlit.app/)
+
 # FDA 510k form Knowledge Base (Project on-going)
 
 The goal of this project is to build a knowledge base using a LLM (Large Language Model), enriched with the RAG (Retrieval-Augmented Generation) technology, for medical device submissions to the FDA.
@@ -29,3 +31,9 @@ Points to improve:
 - prompt engineering
 - LLM models benchmark
 - modulate the nature of the answer (plain text VS SQL query results as dataframe)
+
+# Example of question to ask 
+- What kind of medical devices are using CNN technologies or neural network for image analysis ?
+- How to validate a medical device using CNN ?
+- What are the risk associated to tomoraphy medical devices ?
+- ... etc
