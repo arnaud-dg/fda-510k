@@ -52,14 +52,14 @@ def display_chat_interface():
 def display_report_generator():
     st.header("Generate Submission Report")
     
-    # Input fields
-    name = st.text_input("Product Name", max_chars=80)
-    applicant_name = st.text_input("Applicant Name", max_chars=200)
-    description = st.text_area("Device Description", max_chars=500)
-    indication = st.text_area("Proposed Indications for Use", max_chars=200)
-    usage_context = st.text_area("Usage Context", max_chars=300)
-    algorithm_type = st.text_input("Algorithm Type", max_chars=100)
-    training_dataset = st.text_area("Training Dataset Description", max_chars=500)
+    # Pre-filled input fields
+    name = st.text_input("Product Name", value="NeuroScan AI", max_chars=80)
+    applicant_name = st.text_input("Applicant Name", value="MedInnovate Technologies", max_chars=200)
+    description = st.text_area("Device Description", value="The NeuroScan AI is a revolutionary medical device designed to diagnose and monitor neurological disorders through an in-depth analysis of brain activity. This system relies on artificial intelligence to interpret electroencephalographic (EEG) data in real time, enabling the rapid and accurate detection of neuronal abnormalities.", max_chars=500)
+    indication = st.text_area("Proposed Indications for Use", value="The NeuroScan AI is primarily used for the early detection of epilepsy, sleep disorders, and cognitive anomalies in patients with unexplained neurological symptoms. It is also useful for the continuous monitoring of patients at high risk of epileptic seizures.", max_chars=200)
+    usage_context = st.text_area("Usage Context", value="The device is designed for use both in hospitals and at home. Once placed on the patient's head, it captures brain signals through a set of electrodes integrated into an ergonomic headset. The user experience is facilitated by an intuitive interface that allows the patient or medical team to start the analysis in just a few simple steps.", max_chars=300)
+    algorithm_type = st.text_area("Algorithm Type", value="The NeuroScan AI primarily uses convolutional neural networks (CNNs) for analyzing EEG signals, combined with supervised and unsupervised learning algorithms. The CNNs are used to identify specific patterns related to brain abnormalities, while a clustering model is used to distinguish normal signals from pathological signals. A recurrent LSTM (Long Short-Term Memory) model is also integrated to analyze the temporal variations of EEG data, detecting events such as epileptic seizures.", max_chars=500)
+    training_dataset = st.text_area("Training Dataset Description", value="The model was trained on a large dataset comprising over 50,000 EEG recordings collected from multiple specialized medical centers around the world. These recordings included data from patients with epilepsy, sleep disorders, as well as healthy subjects, allowing for the development of a robust and generalized model. The data were anonymized and preprocessed to remove non-neuronal artifacts (such as muscle movements or eye blinks). The training dataset was enriched using data augmentation techniques, simulating various scenarios to improve the model's generalization capability.", max_chars=500)
 
     if st.button("Generate Report"):
         report = generate_submission_report(
