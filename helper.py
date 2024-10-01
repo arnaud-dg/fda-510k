@@ -163,14 +163,14 @@ def generate_submission_report(name, applicant_name, description, indication, us
 
     Please structure the report according to the following sections:
 
-    1. Product Name (80 characters max)
-    2. Applicant Information (200 characters max)
-    3. Consensus Standards (300 characters max)
-    4. Device Description (500 characters max)
-    5. Proposed Indications for Use (200 characters max)
-    6. Classification (500 characters max)
-    7. Equivalent Medical Devices (500 characters max)
-    8. Description of Verification Tests (200-1000 characters)
+    1. Product Name
+    2. Applicant Information
+    3. Consensus Standards
+    4. Device Description
+    5. Proposed Indications for Use 
+    6. Classification
+    7. Equivalent Medical Devices
+    8. Description of Verification Tests
 
     Ensure that each section adheres to the specified character limits and provides relevant, concise information based on the input provided and your knowledge of FDA 510(k) submissions.
     """
