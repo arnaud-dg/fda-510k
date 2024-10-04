@@ -1,39 +1,65 @@
 [Streamlit Weblink](https://fda-510k-dkpqqdmyxeshkpspqez74e.streamlit.app/)
 
-# FDA 510k form Knowledge Base (Project on-going)
+#FDA 510k Knowledge Base Project
+##Description
+This project is a Streamlit-based web application that leverages a Large Language Model (LLM) with Retrieval-Augmented Generation (RAG) capabilities, powered by Snowflake. The application serves as a knowledge base for FDA 510k submissions, allowing users to chat with an AI assistant and generate submission reports.
+Features
 
-The goal of this project is to build a knowledge base using a LLM (Large Language Model), enriched with the RAG (Retrieval-Augmented Generation) technology, for medical device submissions to the FDA.
-The FDA 510(k) form is a premarket submission made to the U.S. Food and Drug Administration (FDA) to demonstrate that a new medical device is at least as safe and effective as a legally marketed device that is not subject to Premarket Approval (PMA). This process is based on the concept of "substantial equivalence" and is a critical step for many medical devices to enter the U.S. market.
-It is very interesting to analyse the state-of-the-art of the submission to enrich and foster the risk analysis.
-By using existing 510(k) forms as references, companies can streamline the submission process, reduce costs, and accelerate the time it takes to bring new, innovative medical devices to patients and healthcare providers.
+Chat interface for querying about FDA medical device submissions
+Report generator for creating detailed FDA 510(k) submission reports
+Integration with Snowflake for data storage and retrieval
+Utilization of LLM-RAG for enhanced query responses
 
-In the end, we obtain a real knowledge base that saves a lot of time when making new submissions. It is very difficult to manually browse the various documents and search for medical devices similar to ours. With this kind of tool, we can, for example, ask for the registration numbers of medical devices that are similar and quickly access their files. It is also possible to ask what verification and validation tests have been done for a given type of technology.
+##Installation
 
-# Data Source
-Data used to build this LLM-RAG agent is provided by the FDA on its open-source website [FDA](https://www.fda.gov/medical-devices/software-medical-device-samd/artificial-intelligence-and-machine-learning-aiml-enabled-medical-devices)
+Clone the repository:
+Copygit clone https://github.com/your-username/fda-510k-knowledge-base.git
+cd fda-510k-knowledge-base
 
-# Methodology
-1. A python script has been desgined to scrap the data from the FDA website. Metadata are collected about each medical devices submissions and PDF files are downloaded ; the PDF files contain a detailed description of the medical device and described the action performed to asses and control risks.
-2. PDF files are stored in an AWS S3 bucket. They are accessible via Snowflake, which serves as the data foundation
-3. Classical steps to build a RAG are performed in Snwoflake with native snowflake functions:
-- PDF scraping
-- text splitting in chunks
-- embedding with [SNOWFLAKE.CORTEX.EMBED_TEXT_768 function](https://docs.snowflake.com/en/sql-reference/functions/embed_text-snowflake-cortex). We obtain a vector of 768 dimensions specific of the context and concpets described for each chunks
-- storage of the chunks, metadata and vecor in a snowflake table
-5. Finally, the chatbot is built through the Streamlit interface. Streamlit is a very simple interface that allows for quick interaction and prototype construction. Each question asked by the user is "vectorized by the LLM", which constructs responses from the closest vectors with a cosine similarity analysis. The streamlit webapp allow the user to change the nature of the LLM used to answer and also to clear the cache of the chatbot agent (whihc keep in memory in a standard way the 7 last questions) 
+Install the required dependencies:
+Copypip install -r requirements.txt
 
-An important step is the design of prompts, becauses these prompts will guide the quality, repetability and veracity of the answers provided by the LLM. The LLM is specifically instructed not to provide a response if the question posed is not in the RAG database, thus limiting the hallucination phenomenon. 
+Set up your Snowflake connection:
 
-This project is still under development !
-Points to improve:
-- RAG database diversity
-- text splitting optimization
-- prompt engineering
-- LLM models benchmark
-- modulate the nature of the answer (plain text VS SQL query results as dataframe)
+Ensure you have a Snowflake account and the necessary credentials
+Configure your Snowflake connection in the Streamlit secrets management
 
-# Example of question to ask 
-- What kind of medical devices are using CNN technologies or neural network for image analysis ?
-- How to validate a medical device using CNN ?
-- What are the risk associated to tomoraphy medical devices ?
-- ... etc
+
+
+##Usage
+
+Run the Streamlit app:
+Copystreamlit run streamlit_app.py
+
+Open your web browser and navigate to the provided local URL (usually http://localhost:8501)
+Use the chat interface to ask questions about FDA 510k submissions
+Generate submission reports using the provided form in the "Generate Report" tab
+
+##Project Structure
+
+streamlit_app.py: Main application file containing the Streamlit interface
+helper.py: Contains helper functions for LLM interactions and report generation
+requirements.txt: List of Python dependencies
+assets/: Directory containing additional resources (e.g., images, documents)
+
+##Dependencies
+
+Streamlit
+Snowflake Snowpark
+Pandas
+Other dependencies as listed in requirements.txt
+
+##Configuration
+
+Snowflake connection: Configure in Streamlit's secrets management
+Model selection: Available in the sidebar of the application
+Debug mode: Toggle in the sidebar for additional information
+
+##Notes
+
+This application uses vectorized PDF documents as a knowledge base
+The LLM-RAG system is built on top of Snowflake's infrastructure
+Ensure proper handling of sensitive information in FDA submissions
+
+##License
+This project is licensed under the MIT License.
