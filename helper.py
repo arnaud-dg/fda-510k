@@ -230,8 +230,18 @@ def complete_query(question):
         ]
     )
 
+    # Extraire la réponse JSON
+    response_json = df_response['RESPONSE'].iloc[0]
+    
+    # Si la réponse est au format JSON avec la clé "choices"
+    try:
+        response_data = response_json['choices'][0]['messages']
+    except (KeyError, IndexError) as e:
+        st.error("Erreur lors de la récupération de la réponse de Snowflake Cortex.")
+        return None
+
     # Ajouter la réponse au cache de la conversation
-    conversation_cache.append((question, df_response['response'].iloc[0]))
+    conversation_cache.append((question, response_data))
 
     return df_response
 
