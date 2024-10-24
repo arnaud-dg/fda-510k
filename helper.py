@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from snowflake.snowpark import Session
 from collections import deque
+import json
 
 # Initialize Snowflake connection
 conn = st.connection("snowflake")
