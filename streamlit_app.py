@@ -12,7 +12,7 @@ def main():
     # Get translations based on selected language
     translations = get_translation(st.session_state.language)
     
-    st.title(f":brain: {translations['title']}")
+    st.title(f":brain: {translations['title']} :robot_face:")
     
     # Create tabs with translated names
     tab1 = st.tabs([translations["tab_chat"]])[0]

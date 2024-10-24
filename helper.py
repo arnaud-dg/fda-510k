@@ -20,9 +20,8 @@ def get_translation(language):
     """Return translations based on selected language."""
     translations = {
         'ENG': {
-            'title': 'FDA 510k form Knowledge Base',
+            'title': 'FDA 510k Knowledge Base Chatbot',
             'tab_chat': 'Chat',
-            'tab_report': 'Generate Report',
             'chat_placeholder': 'How can I help you concerning FDA medical devices submissions?',
             'thinking': 'thinking',
             'report_header': 'Generate FDA 510(k) Submission Report',
@@ -37,9 +36,8 @@ def get_translation(language):
             'description_header': 'Description'
         },
         'FR': {
-            'title': 'Base de Connaissances FDA 510k',
+            'title': 'Assistant - Base de Connaissances FDA 510k',
             'tab_chat': 'Discussion',
-            'tab_report': 'Générer un Rapport',
             'chat_placeholder': 'Comment puis-je vous aider concernant les soumissions FDA pour les dispositifs médicaux ?',
             'thinking': 'réfléchit',
             'report_header': 'Générer un Rapport de Soumission FDA 510(k)',
@@ -160,8 +158,18 @@ def complete_query(question):
         ]
     )
     
-    # Get response text directly
-    response_text = df_response['RESPONSE'].iloc[0]
+    # Get response text and parse JSON
+    raw_response = df_response['RESPONSE'].iloc[0]
+    
+    try:
+        # Parse the JSON response
+        response_json = json.loads(raw_response)
+        # Extract the message text from the choices array
+        response_text = response_json['choices'][0]['messages'].strip()
+    except (json.JSONDecodeError, KeyError, IndexError) as e:
+        # Fallback in case of parsing errors
+        st.error(f"Error parsing response: {e}")
+        response_text = "Je suis désolé, mais je n'ai pas pu traiter correctement la réponse. Pourriez-vous reformuler votre question?"
     
     # Add to conversation cache
     conversation_cache.append((question, response_text))
