@@ -12,7 +12,7 @@ MODEL_NAME = 'mistral-7b'
 NUM_CHUNKS = 3
 SLIDE_WINDOW = 7
 MAX_CACHE_SIZE = 10
-DEFAULT_TEMPERATURE = 0.7
+DEFAULT_TEMPERATURE = 0.9
 
 # Initialize cache
 conversation_cache = deque(maxlen=MAX_CACHE_SIZE)
@@ -116,11 +116,11 @@ def config_options():
     st.sidebar.image("https://raw.githubusercontent.com/arnaud-dg/fda-510k/main/assets/510k.png", width=250)
     st.sidebar.write("")
     
-    st.markdown(f"__{translations['description_header']}__")
-    st.write(translations["sidebar_description"])
-    st.write(translations["sidebar_doc_count"])
+    st.sidebar.markdown(f"__{translations['description_header']}__")
+    st.sidebar.write(translations["sidebar_description"])
+    st.sidebar.write(translations["sidebar_doc_count"])
     
-    st.divider()
+    st.sidebar.divider()
 
     # Create expander for options
     with st.sidebar.expander(translations['sidebar_title'], expanded=False):
