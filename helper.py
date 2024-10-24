@@ -64,10 +64,8 @@ def clear_session_state():
     # Clear conversation cache
     conversation_cache.clear()
     
-    # Reset session state variables
+    # Reset only the messages and debug state
     st.session_state.messages = []
-    st.session_state.model_name = MODEL_NAME
-    st.session_state.use_chat_history = True
     st.session_state.debug = False
     
     # Clear suggestions to regenerate them
@@ -164,7 +162,7 @@ def config_options():
             type="primary"
         ):
             clear_session_state()
-            st.experimental_rerun()
+            st.rerun() 
 
 def complete_query(question):
     """Complete the query using the LLM."""
