@@ -234,21 +234,13 @@ def complete_query(question):
         ]
     )
     
-    # Extraire la réponse textuelle
+    # Récupérer la réponse directement comme une chaîne de caractères
     response_text = df_response['RESPONSE'].iloc[0]
     
-    # Analyser (parser) la chaîne JSON si c'est du texte JSON
-    try:
-        response_json = json.loads(response_text)
-        response_data = response_json['choices'][0]['messages']
-    except (json.JSONDecodeError, KeyError, IndexError) as e:
-        st.error("Erreur lors de l'analyse de la réponse de Snowflake Cortex.")
-        return None
-
     # Ajouter la réponse au cache de la conversation
-    conversation_cache.append((question, response_data))
+    conversation_cache.append((question, response_text))
 
-    return response_data
+    return response_text
 
 
 def generate_submission_report(name, applicant_name, description, indication, usage_context, algorithm_type, training_dataset):
