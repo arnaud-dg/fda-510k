@@ -75,25 +75,96 @@ def clear_session_state():
     # Clear Streamlit cache
     st.cache_data.clear()
 
+def generate_dynamic_suggestions(messages, language):
+    """Generate new suggestions using the LLM based on conversation context."""
+    # If there are no previous messages, return None to use default suggestions
+    if not messages:
+        return None
+        
+    # Get the last exchange
+    last_exchange = messages[-2:] if len(messages) >= 2 else messages
+    last_topic = last_exchange[-1]["content"]
+    
+    # Define language-specific prompt
+    if language == 'ENG':
+        prompt = f"""
+            Based on this last conversation about: "{last_topic}"
+            Generate 3 relevant follow-up questions that a user might want to ask about this topic.
+            The questions should be specifically about FDA medical device submissions and regulations.
+            Return only the questions, one per line, without any numbering or additional text.
+            Keep each question under 75 characters.
+            """
+    else:
+        prompt = f"""
+            Basé sur cette dernière conversation à propos de : "{last_topic}"
+            Générez 3 questions de suivi pertinentes qu'un utilisateur pourrait vouloir poser sur ce sujet.
+            Les questions doivent porter spécifiquement sur les soumissions et réglementations FDA des dispositifs médicaux.
+            Retournez uniquement les questions, une par ligne, sans numérotation ni texte supplémentaire.
+            Gardez chaque question sous 75 caractères.
+            """
+    
+    # Use Snowflake Cortex to generate suggestions
+    cmd = """
+        SELECT SNOWFLAKE.CORTEX.COMPLETE(
+            ?, 
+            ARRAY_CONSTRUCT(OBJECT_CONSTRUCT('role', 'user', 'content', ?)),
+            OBJECT_CONSTRUCT('temperature', 0.7, 'max_tokens', 256)
+        ) AS response
+    """
+    
+    try:
+        # Execute query with parameters
+        df_response = conn.query(
+            cmd,
+            params=[MODEL_NAME, prompt]
+        )
+        
+        # Get response and split into lines
+        raw_response = df_response['RESPONSE'].iloc[0]
+        response_json = json.loads(raw_response)
+        suggestions_text = response_json['choices'][0]['messages'].strip()
+        
+        # Split into separate questions and take first 3
+        suggestions = [q.strip() for q in suggestions_text.split('\n') if q.strip()][:3]
+        
+        # If we don't get exactly 3 questions, return None to use defaults
+        if len(suggestions) != 3:
+            return None
+            
+        return suggestions
+        
+    except Exception as e:
+        st.error(f"Error generating suggestions: {e}")
+        return None
+
 def generate_suggestions(messages, language):
     """Generate suggested questions based on chat history and language."""
-    # Default suggestions for each language
-    default_suggestions = {
+    # Initial default suggestions for each language
+    initial_suggestions = {
         'ENG': [
             "What is a 510(k) submission?",
-            "How long does the FDA review process take?",
-            "What documents are required?"
+            "Give me details about medical devices using computer vision",
+            "What is a good training dataset?"
         ],
         'FR': [
             "Qu'est-ce qu'une soumission 510(k) ?",
-            "Combien de temps dure le processus d'examen de la FDA ?",
-            "Quels documents sont requis ?"
+            "Donnez-moi des détails sur les dispositifs médicaux utilisant la vision par ordinateur",
+            "Quel est un bon jeu de données d'entraînement ?"
         ]
     }
     
-    # For now, return default suggestions
-    # This could be enhanced to generate dynamic suggestions based on chat history
-    return default_suggestions[language]
+    # If there are no messages, return initial suggestions
+    if not messages:
+        return initial_suggestions[language]
+        
+    # Try to generate dynamic suggestions
+    dynamic_suggestions = generate_dynamic_suggestions(messages, language)
+    
+    # If dynamic generation fails or returns None, use initial suggestions
+    if not dynamic_suggestions:
+        return initial_suggestions[language]
+        
+    return dynamic_suggestions
 
 def initialize_session_state():
     """Initialize session state variables."""
