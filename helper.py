@@ -214,9 +214,8 @@ def complete_query(question):
     # Utiliser des paramètres nommés pour l'appel à la fonction Snowflake
     cmd = """
         SELECT snowflake.cortex.complete(
-            model_name => ?,
-            prompt => ?,
-            temperature => ?
+            model => ?,
+            prompt => ?
         ) as response
     """
     
