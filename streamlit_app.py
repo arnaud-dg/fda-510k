@@ -1,10 +1,13 @@
 import streamlit as st
+
+st.set_page_config(layout="wide")
+
 import pandas as pd
 from helper import initialize_session_state, config_options, complete_query, get_translation, generate_suggestions
 
 # Set options for pandas to display full text in columns
 pd.set_option("max_colwidth", None)
-st.set_page_config(layout="wide")
+
 
 def main():
     initialize_session_state()
