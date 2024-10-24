@@ -29,22 +29,40 @@ def display_chat_interface(translations):
     if "suggestions" not in st.session_state:
         st.session_state.suggestions = generate_suggestions(st.session_state.messages, st.session_state.language)
     
-    # Create columns for suggestion buttons
-    col1, col2, col3 = st.columns(3)
+    # Add custom CSS for the buttons
+    st.markdown("""
+        <style>
+        .stButton > button {
+            width: 100%;
+            height: 80px;
+            white-space: normal;
+            word-wrap: break-word;
+            padding: 15px;
+            line-height: 1.2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    # Create columns with equal width
+    col1, spacer1, col2, spacer2, col3 = st.columns([1, 0.1, 1, 0.1, 1])
     
     # Display suggestion buttons
     with col1:
-        if st.button(st.session_state.suggestions[0], key="sug1"):
+        if st.button(st.session_state.suggestions[0], key="sug1", use_container_width=True):
             question = st.session_state.suggestions[0]
             process_question(question, translations)
     
     with col2:
-        if st.button(st.session_state.suggestions[1], key="sug2"):
+        if st.button(st.session_state.suggestions[1], key="sug2", use_container_width=True):
             question = st.session_state.suggestions[1]
             process_question(question, translations)
     
     with col3:
-        if st.button(st.session_state.suggestions[2], key="sug3"):
+        if st.button(st.session_state.suggestions[2], key="sug3", use_container_width=True):
             question = st.session_state.suggestions[2]
             process_question(question, translations)
     
