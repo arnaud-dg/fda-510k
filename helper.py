@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from snowflake.snowpark import Session
 from collections import deque
+import json
 
 # Initialize Snowflake connection
 conn = st.connection("snowflake")
@@ -97,13 +98,7 @@ def config_options():
         key="model_name",
         index=0
     )
-    
-    st.sidebar.checkbox(
-        translations['use_history'],
-        key="use_chat_history",
-        value=False
-    )
-    
+
     st.sidebar.slider(
         translations['temperature_label'],
         min_value=0.0,
@@ -112,6 +107,12 @@ def config_options():
         step=0.1,
         help=translations['temperature_help'],
         key="temperature"
+    )
+    
+    st.sidebar.checkbox(
+        translations['use_history'],
+        key="use_chat_history",
+        value=False
     )
 
 def _get_similar_chunks(question):
@@ -207,16 +208,19 @@ def _create_prompt(question):
 
 def complete_query(question):
     """Complete the query using the LLM."""
+    
+    # Nettoyer le cache des données
     st.cache_data.clear()
 
+    # Créer le prompt à partir de la question et de l'historique (s'il est utilisé)
     prompt = _create_prompt(question)
-    
+
     # Construire la requête SQL pour Snowflake Cortex
     cmd = """
         SELECT SNOWFLAKE.CORTEX.COMPLETE(
             ?, 
             ARRAY_CONSTRUCT(OBJECT_CONSTRUCT('role', 'user', 'content', ?)),
-            OBJECT_CONSTRUCT('temperature', ?)
+            OBJECT_CONSTRUCT('temperature', ?, 'max_tokens', 1024)
         ) AS response
     """
 
@@ -229,21 +233,22 @@ def complete_query(question):
             st.session_state.temperature   # Valeur de la température (ex : 0.7)
         ]
     )
-
-    # Extraire la réponse JSON
-    response_json = df_response['RESPONSE'].iloc[0]
     
-    # Si la réponse est au format JSON avec la clé "choices"
+    # Extraire la réponse textuelle
+    response_text = df_response['RESPONSE'].iloc[0]
+    
+    # Analyser (parser) la chaîne JSON si c'est du texte JSON
     try:
+        response_json = json.loads(response_text)
         response_data = response_json['choices'][0]['messages']
-    except (KeyError, IndexError) as e:
-        st.error("Erreur lors de la récupération de la réponse de Snowflake Cortex.")
+    except (json.JSONDecodeError, KeyError, IndexError) as e:
+        st.error("Erreur lors de l'analyse de la réponse de Snowflake Cortex.")
         return None
 
     # Ajouter la réponse au cache de la conversation
     conversation_cache.append((question, response_data))
 
-    return df_response
+    return response_data
 
 
 def generate_submission_report(name, applicant_name, description, indication, usage_context, algorithm_type, training_dataset):
