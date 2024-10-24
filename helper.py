@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from snowflake.snowpark import Session
 from collections import deque
-import json
 
 # Initialize Snowflake connection
 conn = st.connection("snowflake")
@@ -55,6 +54,26 @@ def get_translation(language):
         }
     }
     return translations[language]
+
+def generate_suggestions(messages, language):
+    """Generate suggested questions based on chat history and language."""
+    # Default suggestions for each language
+    default_suggestions = {
+        'ENG': [
+            "What is a 510(k) submission?",
+            "How long does the FDA review process take?",
+            "What documents are required?"
+        ],
+        'FR': [
+            "Qu'est-ce qu'une soumission 510(k) ?",
+            "Combien de temps dure le processus d'examen de la FDA ?",
+            "Quels documents sont requis ?"
+        ]
+    }
+    
+    # For now, return default suggestions
+    # This could be enhanced to generate dynamic suggestions based on chat history
+    return default_suggestions[language]
 
 def initialize_session_state():
     """Initialize session state variables."""
@@ -115,6 +134,42 @@ def config_options():
         value=False
     )
 
+def complete_query(question):
+    """Complete the query using the LLM."""
+    # Clear data cache
+    st.cache_data.clear()
+
+    # Create prompt from question and history
+    prompt = _create_prompt(question)
+
+    # Build SQL query for Snowflake Cortex
+    cmd = """
+        SELECT SNOWFLAKE.CORTEX.COMPLETE(
+            ?, 
+            ARRAY_CONSTRUCT(OBJECT_CONSTRUCT('role', 'user', 'content', ?)),
+            OBJECT_CONSTRUCT('temperature', ?, 'max_tokens', 1024)
+        ) AS response
+    """
+
+    # Execute query with parameters
+    df_response = conn.query(
+        cmd,
+        params=[
+            st.session_state.model_name,
+            prompt,
+            st.session_state.temperature
+        ]
+    )
+    
+    # Get response text directly
+    response_text = df_response['RESPONSE'].iloc[0]
+    
+    # Add to conversation cache
+    conversation_cache.append((question, response_text))
+
+    return response_text
+
+# Helper functions for complete_query
 def _get_similar_chunks(question):
     """Retrieve similar chunks from the database."""
     cmd = """
@@ -140,33 +195,6 @@ def _get_chat_history():
     for i in range(start_index, len(st.session_state.messages) - 1):
         chat_history.append(st.session_state.messages[i])
     return chat_history
-
-def _summarize_question_with_history(chat_history, question):
-    """Summarize the question with chat history."""
-    prompt = f"""
-        Based on the chat history below and the question, generate a query that extends the question
-        with the chat history provided. The query should be in natural language. 
-        Answer with only the query. Do not add any explanation.
-        
-        <chat_history>
-        {chat_history}
-        </chat_history>
-        <question>
-        {question}
-        </question>
-    """
-    cmd = """
-        SELECT snowflake.cortex.complete(?, ?) as response
-    """
-    
-    df_response = conn.query(cmd, params=[st.session_state.model_name, prompt])
-    summary = df_response['RESPONSE'].iloc[0]
-
-    if st.session_state.debug:
-        st.sidebar.text("Summary to be used to find similar chunks in the docs:")
-        st.sidebar.caption(summary)
-
-    return summary
 
 def _create_prompt(question):
     """Create a prompt for the LLM."""
@@ -206,72 +234,29 @@ def _create_prompt(question):
     """
     return prompt
 
-def complete_query(question):
-    """Complete the query using the LLM."""
-    
-    # Nettoyer le cache des données
-    st.cache_data.clear()
-
-    # Créer le prompt à partir de la question et de l'historique (s'il est utilisé)
-    prompt = _create_prompt(question)
-
-    # Construire la requête SQL pour Snowflake Cortex
-    cmd = """
-        SELECT SNOWFLAKE.CORTEX.COMPLETE(
-            ?, 
-            ARRAY_CONSTRUCT(OBJECT_CONSTRUCT('role', 'user', 'content', ?)),
-            OBJECT_CONSTRUCT('temperature', ?, 'max_tokens', 1024)
-        ) AS response
-    """
-
-    # Exécuter la requête avec les bons paramètres
-    df_response = conn.query(
-        cmd,
-        params=[
-            st.session_state.model_name,   # Nom du modèle (ex : mistral-7b)
-            prompt,                        # Le prompt ou l'historique
-            st.session_state.temperature   # Valeur de la température (ex : 0.7)
-        ]
-    )
-    
-    # Récupérer la réponse directement comme une chaîne de caractères
-    response_text = df_response['RESPONSE'].iloc[0]
-    
-    # Ajouter la réponse au cache de la conversation
-    conversation_cache.append((question, response_text))
-
-    return response_text
-
-
-def generate_submission_report(name, applicant_name, description, indication, usage_context, algorithm_type, training_dataset):
-    """Generate a submission report based on user inputs."""
+def _summarize_question_with_history(chat_history, question):
+    """Summarize the question with chat history."""
     prompt = f"""
-    Generate a detailed FDA 510(k) submission report using the following information:
-
-    Product Name: {name}
-    Applicant Name: {applicant_name}
-    Device Description: {description}
-    Proposed Indications for Use: {indication}
-    Usage Context: {usage_context}
-    Algorithm Type: {algorithm_type}
-    Training Dataset: {training_dataset}
-
-    Please structure the report according to the following sections:
-
-    1. Product Name
-    2. Applicant Information
-    3. Consensus Standards
-    4. Device Description
-    5. Proposed Indications for Use 
-    6. Classification
-    7. Equivalent Medical Devices
-    8. Description of Verification Tests
-
-    Ensure that each section adheres to the specified character limits and provides relevant, concise information based on the input provided and your knowledge of FDA 510(k) submissions.
+        Based on the chat history below and the question, generate a query that extends the question
+        with the chat history provided. The query should be in natural language. 
+        Answer with only the query. Do not add any explanation.
+        
+        <chat_history>
+        {chat_history}
+        </chat_history>
+        <question>
+        {question}
+        </question>
     """
-
     cmd = """
         SELECT snowflake.cortex.complete(?, ?) as response
     """
+    
     df_response = conn.query(cmd, params=[st.session_state.model_name, prompt])
-    return df_response['RESPONSE'].iloc[0]
+    summary = df_response['RESPONSE'].iloc[0]
+
+    if st.session_state.debug:
+        st.sidebar.text("Summary to be used to find similar chunks in the docs:")
+        st.sidebar.caption(summary)
+
+    return summary
