@@ -56,14 +56,14 @@ def initialize_session_state():
 def config_options():
     """Configure sidebar options."""
     st.sidebar.image("https://raw.githubusercontent.com/arnaud-dg/fda-510k/main/assets/510k.png", width=250)
-    st.sidebar.br()
+    st.sidebar.write("")
     st.sidebar.divider()
     
     translations = get_translation(st.session_state.language)
     st.sidebar.write(translations["sidebar_description"])
     st.sidebar.write(translations["sidebar_doc_count"])
     
-    st.sidebar.br()
+    st.sidebar.write("")
     st.sidebar.divider()
     st.sidebar.write(translations["sidebar_title"])
     
