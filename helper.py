@@ -210,19 +210,30 @@ def complete_query(question):
     st.cache_data.clear()
 
     prompt = _create_prompt(question)
+    
+    # Utiliser des paramètres nommés pour l'appel à la fonction Snowflake
     cmd = """
-        SELECT snowflake.cortex.complete(?, ?, temperature => ?) as response
+        SELECT snowflake.cortex.complete(
+            model_name => ?,
+            prompt => ?,
+            temperature => ?
+        ) as response
     """
-    df_response = conn.query(cmd, params=[
-        st.session_state.model_name,
-        prompt,
-        st.session_state.temperature
-    ])
+    
+    df_response = conn.query(
+        cmd,
+        params=[
+            st.session_state.model_name,
+            prompt,
+            st.session_state.temperature
+        ]
+    )
 
     # Add to cache
     conversation_cache.append((question, df_response['RESPONSE'].iloc[0]))
 
     return df_response
+
 
 def generate_submission_report(name, applicant_name, description, indication, usage_context, algorithm_type, training_dataset):
     """Generate a submission report based on user inputs."""
