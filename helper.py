@@ -211,25 +211,27 @@ def complete_query(question):
 
     prompt = _create_prompt(question)
     
-    # Utiliser des paramètres nommés pour l'appel à la fonction Snowflake
+    # Construire la requête SQL pour Snowflake Cortex
     cmd = """
-        SELECT snowflake.cortex.complete(
-            model => ?,
-            prompt => ?
-        ) as response
+        SELECT SNOWFLAKE.CORTEX.COMPLETE(
+            ?, 
+            ARRAY_CONSTRUCT(OBJECT_CONSTRUCT('role', 'user', 'content', ?)),
+            OBJECT_CONSTRUCT('temperature', ?)
+        ) AS response
     """
-    
+
+    # Exécuter la requête avec les bons paramètres
     df_response = conn.query(
         cmd,
         params=[
-            st.session_state.model_name,
-            prompt,
-            st.session_state.temperature
+            st.session_state.model_name,   # Nom du modèle (ex : mistral-7b)
+            prompt,                        # Le prompt ou l'historique
+            st.session_state.temperature   # Valeur de la température (ex : 0.7)
         ]
     )
 
-    # Add to cache
-    conversation_cache.append((question, df_response['RESPONSE'].iloc[0]))
+    # Ajouter la réponse au cache de la conversation
+    conversation_cache.append((question, df_response['response'].iloc[0]))
 
     return df_response
 
