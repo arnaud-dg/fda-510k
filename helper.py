@@ -3,17 +3,42 @@ import pandas as pd
 from snowflake.snowpark import Session
 from collections import deque
 
-# Snowflake connection
-conn = st.connection("snowflake")
-
 # Constants
 MODEL_NAME = 'mistral-7b'
-NUM_CHUNKS = 3  # Number of chunks provided as context
-SLIDE_WINDOW = 7  # Number of last conversations to remember
-MAX_CACHE_SIZE = 10  # Maximum number of cached conversations
+NUM_CHUNKS = 3
+SLIDE_WINDOW = 7
+MAX_CACHE_SIZE = 10
 
 # Initialize cache
 conversation_cache = deque(maxlen=MAX_CACHE_SIZE)
+
+def get_translation(language):
+    """Return translations based on selected language."""
+    translations = {
+        'ENG': {
+            'title': 'FDA 510k form Knowledge Base',
+            'tab_chat': 'Chat',
+            'tab_report': 'Generate Report',
+            'chat_placeholder': 'How can I help you concerning FDA medical devices submissions?',
+            'thinking': 'thinking',
+            'report_header': 'Generate FDA 510(k) Submission Report',
+            'sidebar_title': 'Options:',
+            'sidebar_description': 'This web application is a personalized LLM chatbot. Unlike other general-purpose LLMs, it is specifically designed to help you explore FDA submission files for medical devices utilizing artificial intelligence.',
+            'sidebar_doc_count': '880 documents serve as the response base for the LLM.'
+        },
+        'FR': {
+            'title': 'Base de Connaissances FDA 510k',
+            'tab_chat': 'Discussion',
+            'tab_report': 'Générer un Rapport',
+            'chat_placeholder': 'Comment puis-je vous aider concernant les soumissions FDA pour les dispositifs médicaux ?',
+            'thinking': 'réfléchit',
+            'report_header': 'Générer un Rapport de Soumission FDA 510(k)',
+            'sidebar_title': 'Options :',
+            'sidebar_description': "Cette application web est un chatbot LLM personnalisé. Contrairement aux LLM généraux, il est spécifiquement conçu pour vous aider à explorer les dossiers de soumission FDA pour les dispositifs médicaux utilisant l'intelligence artificielle.",
+            'sidebar_doc_count': '880 documents servent de base de réponse pour le LLM.'
+        }
+    }
+    return translations[language]
 
 def initialize_session_state():
     """Initialize session state variables."""
@@ -25,22 +50,35 @@ def initialize_session_state():
         st.session_state.use_chat_history = False
     if "debug" not in st.session_state:
         st.session_state.debug = False
+    if "language" not in st.session_state:
+        st.session_state.language = 'ENG'
 
 def config_options():
     """Configure sidebar options."""
     st.sidebar.image("https://raw.githubusercontent.com/arnaud-dg/fda-510k/main/assets/510k.png", width=250)
-    st.sidebar.write("This web application is a personalized LLM chatbot. Unlike other general-purpose LLMs, it is specifically designed to help you explore FDA submission files for medical devices utilizing artificial intelligence.")
-    st.sidebar.write("780 documents serve as the response base for the LLM.") 
+    st.sidebar.br()
+    st.sidebar.divider()
+    
+    translations = get_translation(st.session_state.language)
+    st.sidebar.write(translations["sidebar_description"])
+    st.sidebar.write(translations["sidebar_doc_count"])
+    
+    st.sidebar.br()
+    st.sidebar.divider()
+    st.sidebar.write(translations["sidebar_title"])
+    
+    st.sidebar.selectbox('Select your language:', (
+        'ENG',
+        'FR',
+    ), key="language", value='ENG')
+    
     st.sidebar.selectbox('Select your LLM model:', (
         'mistral-7b',
         'llama3-8b',
         'gemma-7b'
-    ), key="model_name")
-    st.sidebar.checkbox('Do you want that I remember the chat history?', key="use_chat_history", value=False)
-    st.sidebar.checkbox('Debug: Click to see summary generated of previous conversation', key="debug", value=False)
-    if st.sidebar.button("Start Over"):
-        st.session_state.messages = []
-    st.sidebar.expander("Session State").write(st.session_state)
+    ), key="model_name", value='mistral-7b')
+    
+    st.sidebar.checkbox('Do you want to use the chat history?', key="use_chat_history", value=False)
 
 def _get_similar_chunks(question):
     """Retrieve similar chunks from the database."""
