@@ -3,6 +3,9 @@ import pandas as pd
 from snowflake.snowpark import Session
 from collections import deque
 
+# Initialize Snowflake connection
+conn = st.connection("snowflake")
+
 # Constants
 MODEL_NAME = 'mistral-7b'
 NUM_CHUNKS = 3
@@ -11,47 +14,6 @@ MAX_CACHE_SIZE = 10
 
 # Initialize cache
 conversation_cache = deque(maxlen=MAX_CACHE_SIZE)
-
-def get_default_suggestions(language):
-    """Return default suggestions based on language."""
-    if language == 'ENG':
-        return [
-            "What are the key requirements for AI/ML medical devices?",
-            "How to structure a 510(k) submission?",
-            "What validation data is needed for AI algorithms?"
-        ]
-    else:
-        return [
-            "Quelles sont les exigences clés pour les dispositifs médicaux IA/ML ?",
-            "Comment structurer une soumission 510(k) ?",
-            "Quelles données de validation sont nécessaires pour les algorithmes IA ?"
-        ]
-
-def generate_suggestions(messages, language):
-    """Generate contextual suggestions based on chat history."""
-    if not messages:
-        return get_default_suggestions(language)
-        
-    prompt = f"""
-    Based on this chat history, generate 3 relevant follow-up questions that would be helpful for learning more about FDA medical device submissions. Questions should be diverse and explore different aspects.
-    
-    Chat history: {str(messages[-4:] if len(messages) > 4 else messages)}
-    
-    Return only the 3 questions, each on a new line, no numbering or other text.
-    """
-    
-    cmd = """
-        SELECT snowflake.cortex.complete(?, ?) as response
-    """
-    try:
-        df_response = conn.query(cmd, params=[st.session_state.model_name, prompt])
-        suggestions = df_response['RESPONSE'].iloc[0].strip().split('\n')
-        if len(suggestions) >= 3:
-            return suggestions[:3]
-    except:
-        pass
-    
-    return get_default_suggestions(language)
 
 def get_translation(language):
     """Return translations based on selected language."""
@@ -67,7 +29,11 @@ def get_translation(language):
             'sidebar_description': 'This web application is a personalized LLM chatbot. Unlike other general-purpose LLMs, it is specifically designed to help you explore FDA submission files for medical devices utilizing artificial intelligence.',
             'sidebar_doc_count': '880 documents serve as the response base for the LLM.',
             'temperature_label': 'Model Temperature:',
-            'temperature_help': 'Higher values make the output more creative, lower values make it more focused and deterministic.'
+            'temperature_help': 'Higher values make the output more creative, lower values make it more focused and deterministic.',
+            'select_language': 'Select your language:',
+            'select_model': 'Select your LLM model:',
+            'use_history': 'Do you want to use the chat history?',
+            'description_header': 'Description'
         },
         'FR': {
             'title': 'Base de Connaissances FDA 510k',
@@ -80,7 +46,11 @@ def get_translation(language):
             'sidebar_description': "Cette application web est un chatbot LLM personnalisé. Contrairement aux LLM généraux, il est spécifiquement conçu pour vous aider à explorer les dossiers de soumission FDA pour les dispositifs médicaux utilisant l'intelligence artificielle.",
             'sidebar_doc_count': '880 documents servent de base de réponse pour le LLM.',
             'temperature_label': 'Température du modèle :',
-            'temperature_help': 'Des valeurs plus élevées rendent la sortie plus créative, des valeurs plus basses la rendent plus concentrée et déterministe.'
+            'temperature_help': 'Des valeurs plus élevées rendent la sortie plus créative, des valeurs plus basses la rendent plus concentrée et déterministe.',
+            'select_language': 'Sélectionnez votre langue :',
+            'select_model': 'Sélectionnez votre modèle LLM :',
+            'use_history': 'Voulez-vous utiliser l\'historique des conversations ?',
+            'description_header': 'Description'
         }
     }
     return translations[language]
@@ -107,27 +77,33 @@ def config_options():
     st.sidebar.divider()
     
     translations = get_translation(st.session_state.language)
-    st.sidebar.markdown("__Description__")
+    st.sidebar.markdown(f"__{translations['description_header']}__")
     st.sidebar.write(translations["sidebar_description"])
     st.sidebar.write(translations["sidebar_doc_count"])
     
     st.sidebar.divider()
     st.sidebar.markdown(f"<strong>{translations['sidebar_title']}</strong>", unsafe_allow_html=True)
     
-    st.sidebar.selectbox('Select your language:', (
-        'ENG',
-        'FR',
-    ), key="language", index=0)
+    st.sidebar.selectbox(
+        translations['select_language'],
+        options=['ENG', 'FR'],
+        key="language",
+        index=0
+    )
     
-    st.sidebar.selectbox('Select your LLM model:', (
-        'mistral-7b',
-        'llama3-8b',
-        'gemma-7b'
-    ), key="model_name", index=0)
+    st.sidebar.selectbox(
+        translations['select_model'],
+        options=['mistral-7b', 'llama3-8b', 'gemma-7b'],
+        key="model_name",
+        index=0
+    )
     
-    st.sidebar.checkbox('Do you want to use the chat history?', key="use_chat_history", value=False)
+    st.sidebar.checkbox(
+        translations['use_history'],
+        key="use_chat_history",
+        value=False
+    )
     
-    # Add temperature slider
     st.sidebar.slider(
         translations['temperature_label'],
         min_value=0.0,
@@ -235,9 +211,13 @@ def complete_query(question):
 
     prompt = _create_prompt(question)
     cmd = """
-        SELECT snowflake.cortex.complete(?, ?) as response
+        SELECT snowflake.cortex.complete(?, ?, temperature => ?) as response
     """
-    df_response = conn.query(cmd, params=[st.session_state.model_name, prompt])
+    df_response = conn.query(cmd, params=[
+        st.session_state.model_name,
+        prompt,
+        st.session_state.temperature
+    ])
 
     # Add to cache
     conversation_cache.append((question, df_response['RESPONSE'].iloc[0]))
