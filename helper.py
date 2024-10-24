@@ -70,13 +70,13 @@ def config_options():
     st.sidebar.selectbox('Select your language:', (
         'ENG',
         'FR',
-    ), key="language", value='ENG')
+    ), key="language", index=0)
     
     st.sidebar.selectbox('Select your LLM model:', (
         'mistral-7b',
         'llama3-8b',
         'gemma-7b'
-    ), key="model_name", value='mistral-7b')
+    ), key="model_name")
     
     st.sidebar.checkbox('Do you want to use the chat history?', key="use_chat_history", value=False)
 
