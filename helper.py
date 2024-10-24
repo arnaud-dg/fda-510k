@@ -33,8 +33,10 @@ def get_translation(language):
             'temperature_help': 'Higher values make the output more creative, lower values make it more focused and deterministic.',
             'select_language': 'Select your language:',
             'select_model': 'Select your LLM model:',
-            'use_history': 'Do you want to use the chat history?',
-            'description_header': 'Description'
+            'use_history': 'Consider the chat history?',
+            'description_header': 'Description',
+            'clear_cache': 'Clear Cache and Reset',
+            'clear_cache_help': 'Clear the conversation history and reset the application.'
         },
         'FR': {
             'title': 'Assistant - Base de Connaissances FDA 510k',
@@ -49,11 +51,31 @@ def get_translation(language):
             'temperature_help': 'Des valeurs plus élevées rendent la sortie plus créative, des valeurs plus basses la rendent plus concentrée et déterministe.',
             'select_language': 'Sélectionnez votre langue :',
             'select_model': 'Sélectionnez votre modèle LLM :',
-            'use_history': 'Voulez-vous utiliser l\'historique des conversations ?',
-            'description_header': 'Description'
+            'use_history': 'Considérer l\'historique des conversations ?',
+            'description_header': 'Description',
+            'clear_cache': 'Effacer le Cache et Réinitialiser',
+            'clear_cache_help': 'Effacer l\'historique des conversations et réinitialiser l\'application.'
         }
     }
     return translations[language]
+
+def clear_session_state():
+    """Clear session state and reset the application."""
+    # Clear conversation cache
+    conversation_cache.clear()
+    
+    # Reset session state variables
+    st.session_state.messages = []
+    st.session_state.model_name = MODEL_NAME
+    st.session_state.use_chat_history = True
+    st.session_state.debug = False
+    
+    # Clear suggestions to regenerate them
+    if "suggestions" in st.session_state:
+        del st.session_state.suggestions
+
+    # Clear Streamlit cache
+    st.cache_data.clear()
 
 def generate_suggestions(messages, language):
     """Generate suggested questions based on chat history and language."""
@@ -90,47 +112,60 @@ def initialize_session_state():
 
 def config_options():
     """Configure sidebar options."""
+    translations = get_translation(st.session_state.language)
+    
+    # Add image above the expander
     st.sidebar.image("https://raw.githubusercontent.com/arnaud-dg/fda-510k/main/assets/510k.png", width=250)
     st.sidebar.write("")
-    st.sidebar.divider()
     
-    translations = get_translation(st.session_state.language)
-    st.sidebar.markdown(f"__{translations['description_header']}__")
-    st.sidebar.write(translations["sidebar_description"])
-    st.sidebar.write(translations["sidebar_doc_count"])
-    
-    st.sidebar.divider()
-    st.sidebar.markdown(f"<strong>{translations['sidebar_title']}</strong>", unsafe_allow_html=True)
-    
-    st.sidebar.selectbox(
-        translations['select_language'],
-        options=['ENG', 'FR'],
-        key="language",
-        index=0
-    )
-    
-    st.sidebar.selectbox(
-        translations['select_model'],
-        options=['mistral-7b', 'llama3-8b', 'gemma-7b'],
-        key="model_name",
-        index=0
-    )
+    # Create expander for options
+    with st.sidebar.expander(translations['sidebar_title'], expanded=False):
+        st.markdown(f"__{translations['description_header']}__")
+        st.write(translations["sidebar_description"])
+        st.write(translations["sidebar_doc_count"])
+        
+        st.divider()
+        
+        st.selectbox(
+            translations['select_language'],
+            options=['ENG', 'FR'],
+            key="language",
+            index=0
+        )
+        
+        st.selectbox(
+            translations['select_model'],
+            options=['mistral-7b', 'llama3-8b', 'gemma-7b'],
+            key="model_name",
+            index=0
+        )
 
-    st.sidebar.slider(
-        translations['temperature_label'],
-        min_value=0.0,
-        max_value=1.0,
-        value=DEFAULT_TEMPERATURE,
-        step=0.1,
-        help=translations['temperature_help'],
-        key="temperature"
-    )
-    
-    st.sidebar.checkbox(
-        translations['use_history'],
-        key="use_chat_history",
-        value=False
-    )
+        st.slider(
+            translations['temperature_label'],
+            min_value=0.0,
+            max_value=1.0,
+            value=DEFAULT_TEMPERATURE,
+            step=0.1,
+            help=translations['temperature_help'],
+            key="temperature"
+        )
+        
+        st.checkbox(
+            translations['use_history'],
+            key="use_chat_history",
+            value=True
+        )
+        
+        st.divider()
+        
+        # Add clear cache button
+        if st.button(
+            translations['clear_cache'],
+            help=translations['clear_cache_help'],
+            type="primary"
+        ):
+            clear_session_state()
+            st.experimental_rerun()
 
 def complete_query(question):
     """Complete the query using the LLM."""
@@ -206,6 +241,7 @@ def _get_chat_history():
 
 def _create_prompt(question):
     """Create a prompt for the LLM."""
+    # Get chat history and context
     if st.session_state.use_chat_history:
         chat_history = _get_chat_history()
         if chat_history:
@@ -216,6 +252,9 @@ def _create_prompt(question):
     else:
         prompt_context = _get_similar_chunks(question)
         chat_history = ""
+    
+    # Define language instruction
+    language_instruction = "Respond in English only." if st.session_state.language == 'ENG' else "Répondez exclusivement en français."
   
     prompt = f"""
         You are an expert chat assistant that extracts information from the CONTEXT provided
@@ -225,6 +264,8 @@ def _create_prompt(question):
         When answering the question contained between <question> and </question> tags
         be concise and do not hallucinate. 
         If you don't have the information, just say so.
+        
+        IMPORTANT INSTRUCTION: {language_instruction}
            
         Do not mention the CONTEXT used in your answer.
         Do not mention the CHAT HISTORY used in your answer.
@@ -244,10 +285,15 @@ def _create_prompt(question):
 
 def _summarize_question_with_history(chat_history, question):
     """Summarize the question with chat history."""
+    # Define language instruction
+    language_instruction = "Respond in English only." if st.session_state.language == 'ENG' else "Répondez exclusivement en français."
+    
     prompt = f"""
         Based on the chat history below and the question, generate a query that extends the question
         with the chat history provided. The query should be in natural language. 
         Answer with only the query. Do not add any explanation.
+        
+        IMPORTANT INSTRUCTION: {language_instruction}
         
         <chat_history>
         {chat_history}

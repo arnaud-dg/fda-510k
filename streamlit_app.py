@@ -4,6 +4,7 @@ from helper import initialize_session_state, config_options, complete_query, get
 
 # Set options for pandas to display full text in columns
 pd.set_option("max_colwidth", None)
+st.set_page_config(layout="wide")
 
 def main():
     initialize_session_state()
