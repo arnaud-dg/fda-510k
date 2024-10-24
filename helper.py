@@ -103,8 +103,6 @@ def initialize_session_state():
         st.session_state.messages = []
     if "model_name" not in st.session_state:
         st.session_state.model_name = MODEL_NAME
-    if "use_chat_history" not in st.session_state:
-        st.session_state.use_chat_history = False
     if "debug" not in st.session_state:
         st.session_state.debug = False
     if "language" not in st.session_state:
@@ -118,13 +116,14 @@ def config_options():
     st.sidebar.image("https://raw.githubusercontent.com/arnaud-dg/fda-510k/main/assets/510k.png", width=250)
     st.sidebar.write("")
     
+    st.markdown(f"__{translations['description_header']}__")
+    st.write(translations["sidebar_description"])
+    st.write(translations["sidebar_doc_count"])
+    
+    st.divider()
+
     # Create expander for options
     with st.sidebar.expander(translations['sidebar_title'], expanded=False):
-        st.markdown(f"__{translations['description_header']}__")
-        st.write(translations["sidebar_description"])
-        st.write(translations["sidebar_doc_count"])
-        
-        st.divider()
         
         st.selectbox(
             translations['select_language'],
