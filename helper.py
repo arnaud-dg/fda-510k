@@ -11,6 +11,7 @@ MODEL_NAME = 'mistral-7b'
 NUM_CHUNKS = 3
 SLIDE_WINDOW = 7
 MAX_CACHE_SIZE = 10
+DEFAULT_TEMPERATURE = 0.7
 
 # Initialize cache
 conversation_cache = deque(maxlen=MAX_CACHE_SIZE)
@@ -87,8 +88,6 @@ def initialize_session_state():
         st.session_state.debug = False
     if "language" not in st.session_state:
         st.session_state.language = 'ENG'
-    if "temperature" not in st.session_state:
-        st.session_state.temperature = 0.7
 
 def config_options():
     """Configure sidebar options."""
@@ -122,7 +121,7 @@ def config_options():
         translations['temperature_label'],
         min_value=0.0,
         max_value=1.0,
-        value=0.7,
+        value=DEFAULT_TEMPERATURE,
         step=0.1,
         help=translations['temperature_help'],
         key="temperature"
