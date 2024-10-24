@@ -12,6 +12,47 @@ MAX_CACHE_SIZE = 10
 # Initialize cache
 conversation_cache = deque(maxlen=MAX_CACHE_SIZE)
 
+def get_default_suggestions(language):
+    """Return default suggestions based on language."""
+    if language == 'ENG':
+        return [
+            "What are the key requirements for AI/ML medical devices?",
+            "How to structure a 510(k) submission?",
+            "What validation data is needed for AI algorithms?"
+        ]
+    else:
+        return [
+            "Quelles sont les exigences clés pour les dispositifs médicaux IA/ML ?",
+            "Comment structurer une soumission 510(k) ?",
+            "Quelles données de validation sont nécessaires pour les algorithmes IA ?"
+        ]
+
+def generate_suggestions(messages, language):
+    """Generate contextual suggestions based on chat history."""
+    if not messages:
+        return get_default_suggestions(language)
+        
+    prompt = f"""
+    Based on this chat history, generate 3 relevant follow-up questions that would be helpful for learning more about FDA medical device submissions. Questions should be diverse and explore different aspects.
+    
+    Chat history: {str(messages[-4:] if len(messages) > 4 else messages)}
+    
+    Return only the 3 questions, each on a new line, no numbering or other text.
+    """
+    
+    cmd = """
+        SELECT snowflake.cortex.complete(?, ?) as response
+    """
+    try:
+        df_response = conn.query(cmd, params=[st.session_state.model_name, prompt])
+        suggestions = df_response['RESPONSE'].iloc[0].strip().split('\n')
+        if len(suggestions) >= 3:
+            return suggestions[:3]
+    except:
+        pass
+    
+    return get_default_suggestions(language)
+
 def get_translation(language):
     """Return translations based on selected language."""
     translations = {
@@ -24,7 +65,9 @@ def get_translation(language):
             'report_header': 'Generate FDA 510(k) Submission Report',
             'sidebar_title': 'Options:',
             'sidebar_description': 'This web application is a personalized LLM chatbot. Unlike other general-purpose LLMs, it is specifically designed to help you explore FDA submission files for medical devices utilizing artificial intelligence.',
-            'sidebar_doc_count': '880 documents serve as the response base for the LLM.'
+            'sidebar_doc_count': '880 documents serve as the response base for the LLM.',
+            'temperature_label': 'Model Temperature:',
+            'temperature_help': 'Higher values make the output more creative, lower values make it more focused and deterministic.'
         },
         'FR': {
             'title': 'Base de Connaissances FDA 510k',
@@ -35,7 +78,9 @@ def get_translation(language):
             'report_header': 'Générer un Rapport de Soumission FDA 510(k)',
             'sidebar_title': 'Options :',
             'sidebar_description': "Cette application web est un chatbot LLM personnalisé. Contrairement aux LLM généraux, il est spécifiquement conçu pour vous aider à explorer les dossiers de soumission FDA pour les dispositifs médicaux utilisant l'intelligence artificielle.",
-            'sidebar_doc_count': '880 documents servent de base de réponse pour le LLM.'
+            'sidebar_doc_count': '880 documents servent de base de réponse pour le LLM.',
+            'temperature_label': 'Température du modèle :',
+            'temperature_help': 'Des valeurs plus élevées rendent la sortie plus créative, des valeurs plus basses la rendent plus concentrée et déterministe.'
         }
     }
     return translations[language]
@@ -52,6 +97,8 @@ def initialize_session_state():
         st.session_state.debug = False
     if "language" not in st.session_state:
         st.session_state.language = 'ENG'
+    if "temperature" not in st.session_state:
+        st.session_state.temperature = 0.7
 
 def config_options():
     """Configure sidebar options."""
@@ -60,12 +107,12 @@ def config_options():
     st.sidebar.divider()
     
     translations = get_translation(st.session_state.language)
+    st.sidebar.markdown("__Description__")
     st.sidebar.write(translations["sidebar_description"])
     st.sidebar.write(translations["sidebar_doc_count"])
     
-    st.sidebar.write("")
     st.sidebar.divider()
-    st.sidebar.write(translations["sidebar_title"])
+    st.sidebar.markdown(f"<strong>{translations['sidebar_title']}</strong>", unsafe_allow_html=True)
     
     st.sidebar.selectbox('Select your language:', (
         'ENG',
@@ -76,9 +123,20 @@ def config_options():
         'mistral-7b',
         'llama3-8b',
         'gemma-7b'
-    ), key="model_name")
+    ), key="model_name", index=0)
     
     st.sidebar.checkbox('Do you want to use the chat history?', key="use_chat_history", value=False)
+    
+    # Add temperature slider
+    st.sidebar.slider(
+        translations['temperature_label'],
+        min_value=0.0,
+        max_value=1.0,
+        value=0.7,
+        step=0.1,
+        help=translations['temperature_help'],
+        key="temperature"
+    )
 
 def _get_similar_chunks(question):
     """Retrieve similar chunks from the database."""
