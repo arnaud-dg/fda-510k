@@ -34,7 +34,7 @@ def display_chat_interface(translations):
         <style>
         .stButton > button {
             width: 100%;
-            height: 80px;
+            height: 110px;
             white-space: normal;
             word-wrap: break-word;
             padding: 15px;
