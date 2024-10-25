@@ -22,8 +22,8 @@ Copypip install -r requirements.txt
 Set up your Snowflake connection:
 
 Ensure you have a Snowflake account and the necessary credentials
-Configure your Snowflake connection in the Streamlit secrets management
-
+Configure your Snowflake connection in the Streamlit secrets management. 
+/!\ Unfortunately RAG vector database is hosted in my snowflake account, so this project can not be runned without my credentials.
 
 
 ## Usage
